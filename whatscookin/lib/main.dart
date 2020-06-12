@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:whatscookin/view/classify.dart';
+import 'package:whatscookin/view/detect.dart';
+import 'package:whatscookin/view/ingredients_list.dart';
+import 'package:whatscookin/view/recipe_screen.dart';
+import 'package:whatscookin/view/recipes_list.dart';
 import 'package:whatscookin/view/select_method.dart';
 
 void main() {
@@ -10,11 +15,18 @@ void main() {
     runApp(MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'What\'s Cookin?',
-        initialRoute: '/',
+        initialRoute: '/ingredients-list',
         theme: ThemeData(
-            fontFamily: 'NunitoSans', scaffoldBackgroundColor: Colors.white),
+          primaryColor: Colors.orange[700],
+          accentColor: Colors.black45
+        ),
         routes: {
-          '/': (context) => SelectMethod(),
+          '/classify': (context) => Classify(),
+          '/detect': (context) => Detect(),
+          '/ingredients-list': (context) => IngredientsList(),
+          '/select-method': (context) => SelectMethod(),
+//          '/recipes-list': (context) => RecipesList(),
+//          '/recipe-screen': (context) => RecipeScreen(),
         }));
   });
 }

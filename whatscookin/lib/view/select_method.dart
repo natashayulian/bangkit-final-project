@@ -9,54 +9,18 @@ class _SelectMethodState extends State<SelectMethod> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SafeArea(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xff0000000F), Color(0xffC2C2C2)]),
-                image: DecorationImage(
-                  image: AssetImage("assets/images/home-background.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Container(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Expanded(
-                                child: Text('Welcome back',
-                                    style: TextStyle(
-                                        fontSize: 25.0, fontWeight: FontWeight.bold)),
-                              ),
-                              SizedBox(height: 5.0),
-                              Expanded(
-                                child: Text(
-                                    'Guest',
-                                    style: TextStyle(
-                                        fontSize: 25.0,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red)),
-                              )
-                            ],
-                          )),
-                      Expanded(
-                        flex: 7,
-                        child: _buttons(),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            )));
+        appBar: AppBar(
+          title: Text(
+              'Select Input Method',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.white,
+          elevation: 0.0,
+        ),
+        body: Container(
+          padding: EdgeInsets.all(32.0),
+          child: _buttons(),
+        )
+    );
   }
 
   _buttons() {
@@ -70,13 +34,14 @@ class _SelectMethodState extends State<SelectMethod> {
               Expanded(
                 flex: 1,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/create-meeting');
+                  onTap: () async {
+                    dynamic result = await Navigator.pushNamed(context, '/classify');
+                    Navigator.pop(context, result);
                   },
                   child: Container(
                       child: Align(
                         alignment: Alignment(0, 0.9),
-                        child: Text('Create',
+                        child: Text('Classify Ingredient',
                             style: TextStyle(
                               fontSize: 20.0,
                               fontWeight: FontWeight.bold,
@@ -88,9 +53,9 @@ class _SelectMethodState extends State<SelectMethod> {
                         gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0xffE83939), Color(0xff289FD0)]),
+                            colors: [Theme.of(context).primaryColor, Theme.of(context).accentColor]),
                         image: DecorationImage(
-                          image: AssetImage("assets/images/create.png"),
+                          image: AssetImage("assets/images/classify.png"),
                           fit: BoxFit.cover,
                         ),
                       )),
@@ -100,13 +65,14 @@ class _SelectMethodState extends State<SelectMethod> {
               Expanded(
                 flex: 1,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/join-room');
+                  onTap: () async {
+                    dynamic result = await Navigator.pushNamed(context, '/detect');
+                    Navigator.pop(context, result);
                   },
                   child: Container(
                       child: Align(
                         alignment: Alignment(0, 0.9),
-                        child: Text('Join',
+                        child: Text('Detect Ingredients',
                             style: TextStyle(
                               fontSize: 20.0,
                               fontWeight: FontWeight.bold,
@@ -118,9 +84,9 @@ class _SelectMethodState extends State<SelectMethod> {
                         gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Color(0xffE83939), Color(0xff289FD0)]),
+                            colors: [Theme.of(context).primaryColor, Theme.of(context).accentColor]),
                         image: DecorationImage(
-                          image: AssetImage("assets/images/join.png"),
+                          image: AssetImage("assets/images/detect.png"),
                           fit: BoxFit.cover,
                         ),
                       )),
@@ -137,7 +103,7 @@ class _SelectMethodState extends State<SelectMethod> {
             child: Container(
                 child: Align(
                   alignment: Alignment(0, 0.9),
-                  child: Text('Friends',
+                  child: Text('Type in Ingredients',
                       style: TextStyle(
                         fontSize: 20.0,
                         fontWeight: FontWeight.bold,
@@ -149,9 +115,9 @@ class _SelectMethodState extends State<SelectMethod> {
                   gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
-                      colors: [Color(0xffE83939), Color(0xff289FD0)]),
+                      colors: [Theme.of(context).primaryColor, Theme.of(context).accentColor]),
                   image: DecorationImage(
-                    image: AssetImage("assets/images/friends.png"),
+                    image: AssetImage("assets/images/type.png"),
                     fit: BoxFit.cover,
                   ),
                 )),

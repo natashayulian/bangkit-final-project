@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:tflite/tflite.dart';
-import 'dart:math' as math;
-import 'dart:io';
 
 class Classify extends StatefulWidget {
   @override
@@ -11,22 +13,32 @@ class Classify extends StatefulWidget {
 }
 
 const String ssd = "SSD MobileNet";
-const String yolo = "Tiny YOLOv2";
 
-class _ClassifyState extends State<Classify> with TickerProviderStateMixin{
-
+class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
   String _model = ssd;
   File _image;
 
   double _imageWidth;
   double _imageHeight;
   bool _busy = false;
+  double _containerHeight = 0;
 
   List _recognitions;
   ImagePicker _picker = ImagePicker();
 
   AnimationController _controller;
-  static const List<IconData> icons = const [ Icons.camera_alt, Icons.image ];
+  static const List<IconData> icons = const [Icons.camera_alt, Icons.image];
+
+  Map<String, int> _ingredients = {};
+  String _selected;
+
+  bool _isLoading = false;
+
+  void _setLoading(bool value) {
+    setState(() {
+      _isLoading = value;
+    });
+  }
 
   @override
   void initState() {
@@ -43,32 +55,24 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin{
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-
   }
 
   loadModel() async {
     Tflite.close();
     try {
-      String res;
-      if (_model == yolo) {
-        res = await Tflite.loadModel(
-          model: "assets/tflite/yolov2_tiny.tflite",
-          labels: "assets/tflite/yolov2_tiny.txt",
-        );
-      } else {
-        res = await Tflite.loadModel(
-          model: "assets/tflite/ssd_mobilenet.tflite",
-          labels: "assets/tflite/ssd_mobilenet.txt",
-        );
-      }
+      String res = await Tflite.loadModel(
+        model: "assets/tflite/mobilenet_v1_1.0_224.tflite",
+        labels: "assets/tflite/mobilenet_v1_1.0_224.txt",
+      );
     } on PlatformException {
       print("Failed to load the model");
     }
   }
 
   selectFromImagePicker({bool fromCamera}) async {
-
-    PickedFile pickedFile = fromCamera ? await _picker.getImage(source: ImageSource.camera) : await _picker.getImage(source: ImageSource.gallery);
+    PickedFile pickedFile = fromCamera
+        ? await _picker.getImage(source: ImageSource.camera)
+        : await _picker.getImage(source: ImageSource.gallery);
     var image = File(pickedFile.path);
     if (image == null) return;
     setState(() {
@@ -80,92 +84,42 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin{
   predictImage(File image) async {
     if (image == null) return;
 
-    if (_model == yolo) {
-      await yolov2Tiny(image);
-    } else {
-      await ssdMobileNet(image);
-    }
+    _setLoading(true);
+
+    await ssdMobileNet(image);
 
     FileImage(image)
         .resolve(ImageConfiguration())
         .addListener((ImageStreamListener((ImageInfo info, bool _) {
-      setState(() {
-        _imageWidth = info.image.width.toDouble();
-        _imageHeight = info.image.height.toDouble();
-      });
-    })));
+          setState(() {
+            _imageWidth = info.image.width.toDouble();
+            _imageHeight = info.image.height.toDouble();
+          });
+        })));
 
     setState(() {
       _image = image;
       _busy = false;
     });
-  }
 
-  yolov2Tiny(File image) async {
-    var recognitions = await Tflite.detectObjectOnImage(
-        path: image.path,
-        model: "YOLO",
-        threshold: 0.3,
-        imageMean: 0.0,
-        imageStd: 255.0,
-        numResultsPerClass: 1);
-
-    setState(() {
-      _recognitions = recognitions;
-    });
+    _setLoading(false);
   }
 
   ssdMobileNet(File image) async {
-    var recognitions = await Tflite.detectObjectOnImage(
-        path: image.path, numResultsPerClass: 1);
+    var recognitions = await Tflite.runModelOnImage(
+        path: image.path, // required
+        imageMean: 0.0, // defaults to 117.0
+        imageStd: 255.0, // defaults to 1.0
+        numResults: 2, // defaults to 5
+        threshold: 0.2, // defaults to 0.1
+        asynch: false // defaults to true
+        );
     setState(() {
       _recognitions = recognitions;
     });
   }
 
-  List<Widget> renderBoxes(Size screen) {
-    if (_recognitions == null) return [];
-    if (_imageWidth == null || _imageHeight == null) return [];
-
-    Map<String, String> listIngredientValue;
-    double factorX = screen.width;
-    double factorY = _imageHeight / _imageWidth * screen.width;
-
-    Color blue = Colors.red;
-
-    return _recognitions.map((re) {
-      if ((re["confidenceInClass"] * 100) > 50){
-        return Positioned(
-          left: re["rect"]["x"] * factorX,
-          top: re["rect"]["y"] * factorY,
-          width: re["rect"]["w"] * factorX,
-          height: re["rect"]["h"] * factorY,
-          child: Container(
-            decoration: BoxDecoration(
-                border: Border.all(
-                  color: blue,
-                  width: 3,
-                )),
-            child: Text(
-              "${re["detectedClass"]} ${(re["confidenceInClass"] * 100).toStringAsFixed(0)}%",
-              style: TextStyle(
-                background: Paint()..color = blue,
-                color: Colors.white,
-                fontSize: 15,
-              ),
-            ),
-          ),
-        );
-      } else {
-        return Container();
-      }
-
-
-    }).toList();
-  }
-
   _imagePreview(File image) {
-
     Size size = MediaQuery.of(context).size;
 
     List<Widget> stackChildren = [];
@@ -177,160 +131,201 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin{
       child: Image.file(image),
     ));
 
-    stackChildren.addAll(renderBoxes(size));
+//    stackChildren.addAll(renderBoxes(size));
 
-    if (_busy) {
-      stackChildren.add(Center(
-        child: CircularProgressIndicator(),
-      ));
+    _controller.reverse();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          flex: 7,
+          child: ListView(
+            children: <Widget>[
+              _checkIfImageReady(stackChildren),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Detected Ingredients',
+                    style:
+                        TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold)),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: _recognitions.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                      child: RadioListTile<String>(
+                          activeColor: Theme.of(context).primaryColor,
+                          groupValue: _selected,
+                          value: _recognitions[index]['label'],
+                          onChanged: (String value) {
+                            if (_selected == value) {
+                              setState(() {
+                                _selected = null;
+                              });
+                            } else {
+                              setState(() {
+                                _selected = value;
+                              });
+                            }
+                          },
+                          secondary: Image.asset('assets/images/detect.png',
+                              width: 40, color: Colors.grey),
+                          title: Text(_recognitions[index]['label'],
+                              style: TextStyle(fontSize: 16.0)),
+                          subtitle: Text(
+                              '${(_recognitions[index]["confidence"] * 100).toStringAsFixed(0)}%')));
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: RaisedButton(
+                color: Theme.of(context).primaryColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.0)),
+                onPressed: () async {
+                  Map<String, int> ingredients = {};
+                  if (_selected == null) {
+                    bool submit = await showDialog(
+                      context: this.context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                            title: Text('No Ingredient Selected'),
+                            actions: <Widget>[
+                              FlatButton(
+                                onPressed: () {
+                                  Navigator.pop(context, false);
+                                },
+                                child: Text('No',
+                                    style: TextStyle(
+                                        color: Theme.of(context).primaryColor)),
+                              ),
+                              FlatButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true);
+                                  },
+                                  child: Text('Yes',
+                                      style: TextStyle(
+                                          color:
+                                              Theme.of(context).primaryColor))),
+                            ],
+                            content: Text(
+                                'You did not select any ingredient. Are you sure you want to submit?'));
+                      },
+                    );
+                    if (submit) {
+                      Navigator.pop(context, _ingredients);
+                    }
+                  } else {
+                    ingredients[_selected] = 1;
+                    setState(() {
+                      _ingredients = ingredients;
+                    });
+                    Navigator.pop(context, _ingredients);
+                  }
+                },
+                child: Text('Submit', style: TextStyle(color: Colors.white))),
+          ),
+        )
+      ],
+    );
+  }
+
+  _checkIfImageReady(List stackChildren) {
+    Size size = MediaQuery.of(context).size;
+    try {
+      double factorY = _imageHeight / _imageWidth * size.width;
+      setState(() {
+        _containerHeight = factorY;
+      });
+    } catch (err) {
+      print(err);
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Expanded(
-            child: Container(
-              child: Stack(
-                children: stackChildren,
-              ),
-            ),
-          ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: FlatButton(
-                    onPressed: (){
-
-                    },
-                    child: Text('Change')
-                ),
-              ),
-              Expanded(
-                child: FlatButton(
-                    onPressed: (){
-                      Map<String, int> ingredients = {};
-                      _recognitions.forEach((element) {
-                        if (ingredients.containsKey(element)) {
-                          ingredients[element['detectedClass']]++;
-                        }
-                        else {
-                          ingredients[element['detectedClass']] = 1;
-                        }
-                      });
-                      Navigator.pop(context, ingredients);
-                    },
-                    child: Text('Accept')
-                ),
-              ),
-
-            ],
-          )
-        ],
-      ),
-    );
+    if (_containerHeight != 0) {
+      return SizedBox(
+          height: _containerHeight,
+          child: Stack(
+            children: stackChildren,
+          ));
+    } else {
+      return SpinKitWanderingCubes(color: Theme.of(context).primaryColor);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.keyboard_backspace,
-              color: Colors.grey,
-            ),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          title: Text('Detect Ingredients',
-              style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
-          elevation: 0.0,
-        ),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: new List.generate(icons.length, (int index) {
-            Widget child = new Container(
-              height: 70.0,
-              width: 56.0,
-              alignment: FractionalOffset.topCenter,
-              child: new ScaleTransition(
-                scale: new CurvedAnimation(
-                  parent: _controller,
-                  curve: new Interval(
-                      0.0,
-                      1.0 - index / icons.length / 2.0,
-                      curve: Curves.easeOut
-                  ),
-                ),
-                child: new FloatingActionButton(
-                    heroTag: null,
-                    backgroundColor: Colors.grey,
-                    mini: true,
-                    child: new Icon(icons[index], color: Colors.black),
-                    onPressed: () => icons[index] == Icons.camera_alt ? selectFromImagePicker(fromCamera: true) : selectFromImagePicker(fromCamera: false)
-                ),
-              ),
-            );
-            return child;
-          }).toList()..add(
-            new FloatingActionButton(
-              heroTag: null,
-              child: new AnimatedBuilder(
-                animation: _controller,
-                builder: (BuildContext context, Widget child) {
-                  return new Transform(
-                    transform: new Matrix4.rotationZ(_controller.value * 0.5 * math.pi),
-                    alignment: FractionalOffset.center,
-                    child: new Icon(_controller.isDismissed ? Icons.add : Icons.close),
-                  );
-                },
+    return ModalProgressHUD(
+      inAsyncCall: _isLoading,
+      progressIndicator:
+          SpinKitWanderingCubes(color: Theme.of(context).primaryColor),
+      child: Scaffold(
+          appBar: AppBar(
+            title: Text('Classify Ingredient'),
+            leading: IconButton(
+              icon: Icon(
+                Icons.chevron_left,
+                color: Theme.of(context).primaryColor,
               ),
               onPressed: () {
-                if (_controller.isDismissed) {
-                  _controller.forward();
-                } else {
-                  _controller.reverse();
-                }
+                Navigator.pop(context);
               },
             ),
+            actions: <Widget>[
+              IconButton(
+                icon: Icon(Icons.image, color: Theme.of(context).primaryColor),
+                onPressed: () {
+                  selectFromImagePicker(fromCamera: false);
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.camera_alt,
+                    color: Theme.of(context).primaryColor),
+                onPressed: () {
+                  selectFromImagePicker(fromCamera: true);
+                },
+              ),
+            ],
+            backgroundColor: Colors.white,
+            elevation: 0.0,
           ),
-        ),
-        body: _content(_image)
+          body: _content(_image)),
     );
   }
 
   _content(File image) {
-    if(image == null) {
+    if (image == null) {
       return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Icon(
-                Icons.image,
-                size: 100.0,
-              ),
+              child: Icon(Icons.image, size: 100.0, color: Colors.grey),
             ),
-            Center(child: Padding(
+            Center(
+                child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(
-                  'No Image',
+              child: Text('No Image',
                   style: TextStyle(
                       fontSize: 20.0,
-                      fontWeight: FontWeight.bold
-                  )
-              ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey)),
             )),
-            Center(child: Text('Image you pick will appear here.'))
-          ]
-      );
+            Center(
+              child: Text('Image you pick will appear here.',
+                  style: TextStyle(color: Colors.grey)),
+            )
+          ]);
     } else {
       return _imagePreview(image);
+//      return Container();
     }
   }
 }

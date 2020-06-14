@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:whatscookin/model/recipe.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:whatscookin/model/recipe_info.dart';
 import 'package:whatscookin/services/api_service.dart';
@@ -14,7 +13,8 @@ class RecipeScreen extends StatefulWidget {
 
 class _RecipeScreenState extends State<RecipeScreen> {
   dynamic _data;
-  RecipeInfo _recipeInfo = RecipeInfo(title: 'wow', sourceUrl: 'www.google.com');
+  RecipeInfo _recipeInfo =
+      RecipeInfo(title: 'wow', sourceUrl: 'www.google.com');
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +24,17 @@ class _RecipeScreenState extends State<RecipeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget._recipeInfo.title),
+        leading: IconButton(
+          icon: Icon(
+            Icons.chevron_left,
+            color: Theme.of(context).primaryColor,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0.0,
       ),
       body: WebView(
         initialUrl: widget._recipeInfo.sourceUrl,

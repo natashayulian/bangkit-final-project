@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:whatscookin/model/recipe.dart';
 import 'package:whatscookin/model/recipe_info.dart';
 
 class APIService {
-
   APIService._instantiate();
 
   static final APIService instance = APIService._instantiate();
@@ -16,8 +17,8 @@ class APIService {
   // Recipe All
   Future<List<Recipe>> fetchAllRecipe(data) async {
     String params = "";
-    for(var i = 0; i < data.length; i++){
-      if (i!=0) {
+    for (var i = 0; i < data.length; i++) {
+      if (i != 0) {
         params += ',${data[i]}';
         continue;
       }
@@ -29,12 +30,13 @@ class APIService {
       'apiKey': API_KEY,
     };
 
-    Uri uri = Uri.parse('https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${params}');
-
+    Uri uri = Uri.parse(
+        'https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${params}');
     Map<String, String> headers = {
       HttpHeaders.contentTypeHeader: 'application/json',
     };
 
+    Fluttertoast.showToast(msg: uri.toString());
 
     try {
       var response = await http.get(uri, headers: headers);
@@ -52,8 +54,8 @@ class APIService {
       'includeNutrition': 'false',
       'apiKey': API_KEY,
     };
-    Uri uri = Uri.parse('https://api.spoonacular.com/recipes/$id/information?apiKey=${API_KEY}&includeNutrition=false');
-    print(uri);
+    Uri uri = Uri.parse(
+        'https://api.spoonacular.com/recipes/$id/information?apiKey=${API_KEY}&includeNutrition=false');
     Map<String, String> headers = {
       HttpHeaders.contentTypeHeader: 'application/json',
     };

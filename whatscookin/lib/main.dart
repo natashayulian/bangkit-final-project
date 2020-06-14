@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:whatscookin/view/classify.dart';
 import 'package:whatscookin/view/detect.dart';
 import 'package:whatscookin/view/ingredients_list.dart';
-import 'package:whatscookin/view/recipe_screen.dart';
-import 'package:whatscookin/view/recipes_list.dart';
 import 'package:whatscookin/view/select_method.dart';
 
 void main() {
@@ -17,9 +15,7 @@ void main() {
         title: 'What\'s Cookin?',
         initialRoute: '/ingredients-list',
         theme: ThemeData(
-          primaryColor: Colors.orange[700],
-          accentColor: Colors.black45
-        ),
+            primaryColor: Colors.orange[500], accentColor: Colors.black45),
         routes: {
           '/classify': (context) => Classify(),
           '/detect': (context) => Detect(),

@@ -12,10 +12,7 @@ class Classify extends StatefulWidget {
   _ClassifyState createState() => _ClassifyState();
 }
 
-const String ssd = "SSD MobileNet";
-
 class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
-  String _model = ssd;
   File _image;
 
   double _imageWidth;
@@ -61,8 +58,8 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
     Tflite.close();
     try {
       String res = await Tflite.loadModel(
-        model: "assets/tflite/mobilenet_v1_1.0_224.tflite",
-        labels: "assets/tflite/mobilenet_v1_1.0_224.txt",
+        model: "assets/tflite/vegs.tflite",
+        labels: "assets/tflite/vegs.txt",
       );
     } on PlatformException {
       print("Failed to load the model");
@@ -86,7 +83,7 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
 
     _setLoading(true);
 
-    await ssdMobileNet(image);
+    await classify(image);
 
     FileImage(image)
         .resolve(ImageConfiguration())
@@ -105,7 +102,7 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
     _setLoading(false);
   }
 
-  ssdMobileNet(File image) async {
+  classify(File image) async {
     var recognitions = await Tflite.runModelOnImage(
         path: image.path, // required
         imageMean: 0.0, // defaults to 117.0
@@ -120,19 +117,6 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
   }
 
   _imagePreview(File image) {
-    Size size = MediaQuery.of(context).size;
-
-    List<Widget> stackChildren = [];
-
-    stackChildren.add(Positioned(
-      top: 0.0,
-      left: 0.0,
-      width: size.width,
-      child: Image.file(image),
-    ));
-
-//    stackChildren.addAll(renderBoxes(size));
-
     _controller.reverse();
 
     return Column(
@@ -142,7 +126,7 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
           flex: 7,
           child: ListView(
             children: <Widget>[
-              _checkIfImageReady(stackChildren),
+              Image.file(image),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text('Detected Ingredients',
@@ -235,28 +219,6 @@ class _ClassifyState extends State<Classify> with TickerProviderStateMixin {
         )
       ],
     );
-  }
-
-  _checkIfImageReady(List stackChildren) {
-    Size size = MediaQuery.of(context).size;
-    try {
-      double factorY = _imageHeight / _imageWidth * size.width;
-      setState(() {
-        _containerHeight = factorY;
-      });
-    } catch (err) {
-      print(err);
-    }
-
-    if (_containerHeight != 0) {
-      return SizedBox(
-          height: _containerHeight,
-          child: Stack(
-            children: stackChildren,
-          ));
-    } else {
-      return SpinKitWanderingCubes(color: Theme.of(context).primaryColor);
-    }
   }
 
   @override

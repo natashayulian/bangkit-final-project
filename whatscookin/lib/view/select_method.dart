@@ -7,7 +7,6 @@ class SelectMethod extends StatefulWidget {
 }
 
 class _SelectMethodState extends State<SelectMethod> {
-  String _text;
   TextEditingController _controller;
 
   @override

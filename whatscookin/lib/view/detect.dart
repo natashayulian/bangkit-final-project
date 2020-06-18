@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
-import 'package:numberpicker/numberpicker.dart';
 import 'package:tflite/tflite.dart';
 
 class Detect extends StatefulWidget {
@@ -13,11 +14,9 @@ class Detect extends StatefulWidget {
   _DetectState createState() => _DetectState();
 }
 
-const String ssd = "SSD MobileNet";
-
 class _DetectState extends State<Detect> with TickerProviderStateMixin {
-  String _model = ssd;
   File _image;
+  String _imageDisplay;
 
   double _imageWidth;
   double _imageHeight;
@@ -86,7 +85,7 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
 
     _setLoading(true);
 
-    await ssdMobileNet(image);
+    await detect(image);
 
     FileImage(image)
         .resolve(ImageConfiguration())
@@ -99,10 +98,10 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
 
     Map<String, int> ingredients = {};
     _recognitions.forEach((element) {
-      if (ingredients.containsKey(element['detectedClass'])) {
-        ingredients[element['detectedClass']]++;
+      if (ingredients.containsKey(element['class'])) {
+        ingredients[element['class']]++;
       } else {
-        ingredients[element['detectedClass']] = 1;
+        ingredients[element['class']] = 1;
       }
     });
 
@@ -115,68 +114,32 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
     _setLoading(false);
   }
 
-  ssdMobileNet(File image) async {
-    var recognitions = await Tflite.detectObjectOnImage(
-        path: image.path, numResultsPerClass: 5);
+  detect(File image) async {
+    Dio dio = new Dio();
+
+    FormData formDataDetections = FormData.fromMap({
+      "images": await MultipartFile.fromFile(image.path, filename: "upload.jpg")
+    });
+    FormData formDataImage = FormData.fromMap({
+      "images": await MultipartFile.fromFile(image.path, filename: "upload.jpg")
+    });
+    var detectionResponse = await dio.post('http://34.87.9.180/detections',
+        data: formDataDetections);
+    var imageResponse =
+        await dio.post('http://34.87.9.180/image', data: formDataImage);
+
+    var recognitions = detectionResponse.data['response'][0]['detections'];
     setState(() {
       _recognitions = recognitions;
+      _imageDisplay = imageResponse.toString();
     });
   }
 
-  List<Widget> renderBoxes(Size screen) {
-    if (_recognitions == null) return [];
-    if (_imageWidth == null || _imageHeight == null) return [];
-
-    _setLoading(true);
-    double factorX = screen.width;
-    double factorY = _imageHeight / _imageWidth * screen.width;
-
-    setState(() {
-      _containerHeight = factorY;
-    });
-
-    Color blue = Theme.of(context).primaryColor;
-
-    _setLoading(false);
-
-    return _recognitions.map((re) {
-      return Positioned(
-        left: re["rect"]["x"] * factorX,
-        top: re["rect"]["y"] * factorY,
-        width: re["rect"]["w"] * factorX,
-        height: re["rect"]["h"] * factorY,
-        child: Container(
-          decoration: BoxDecoration(
-              border: Border.all(
-            color: blue,
-            width: 3,
-          )),
-          child: Text(
-            "${re["detectedClass"]} ${(re["confidenceInClass"] * 100).toStringAsFixed(0)}%",
-            style: TextStyle(
-              background: Paint()..color = blue,
-              color: Colors.white,
-              fontSize: 15,
-            ),
-          ),
-        ),
-      );
-    }).toList();
+  Image imageFromBase64String(String base64String) {
+    return Image.memory(base64Decode(base64String));
   }
 
   _imagePreview(File image) {
-    Size size = MediaQuery.of(context).size;
-    List<Widget> stackChildren = [];
-
-    stackChildren.add(Positioned(
-      top: 0.0,
-      left: 0.0,
-      width: size.width,
-      child: Image.file(image),
-    ));
-
-    stackChildren.addAll(renderBoxes(size));
-
     _controller.reverse();
 
     return Column(
@@ -186,7 +149,7 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
           flex: 7,
           child: ListView(
             children: <Widget>[
-              _checkIfImageReady(stackChildren),
+              imageFromBase64String(_imageDisplay),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text('Detected Ingredients',
@@ -202,10 +165,10 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
                       child: ListTile(
                           leading: Image.asset('assets/images/detect.png',
                               width: 40, color: Colors.grey),
-                          title: Text(_recognitions[index]['detectedClass'],
+                          title: Text(_recognitions[index]['class'],
                               style: TextStyle(fontSize: 16.0)),
                           trailing: Text(
-                              '${(_recognitions[index]["confidenceInClass"] * 100).toStringAsFixed(0)}%')));
+                              '${(_recognitions[index]["confidence"]).toStringAsFixed(0)}%')));
                 },
               ),
             ],
@@ -227,18 +190,6 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
         )
       ],
     );
-  }
-
-  _checkIfImageReady(List stackChildren) {
-    if (_containerHeight != 0) {
-      return SizedBox(
-          height: _containerHeight,
-          child: Stack(
-            children: stackChildren,
-          ));
-    } else {
-      return SpinKitWanderingCubes(color: Theme.of(context).primaryColor);
-    }
   }
 
   @override
@@ -308,30 +259,5 @@ class _DetectState extends State<Detect> with TickerProviderStateMixin {
     } else {
       return _imagePreview(image);
     }
-  }
-
-  void _showDialog(String ingredient) async {
-    await showDialog<int>(
-        context: context,
-        builder: (BuildContext context) {
-          return NumberPickerDialog.integer(
-            minValue: 0,
-            maxValue: 100,
-            title: new Text(ingredient),
-            initialIntegerValue: _ingredients[ingredient],
-          );
-        }).then((value) {
-      if (value != null) {
-        if (value == 0) {
-          setState(() => _ingredients.remove(ingredient));
-        } else if (value > 100) {
-          setState(() => _ingredients[ingredient] = 100);
-        } else if (value < 0) {
-          setState(() => _ingredients[ingredient] = 0);
-        } else {
-          setState(() => _ingredients[ingredient] = value);
-        }
-      }
-    });
   }
 }

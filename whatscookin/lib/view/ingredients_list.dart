@@ -14,8 +14,6 @@ class IngredientsList extends StatefulWidget {
 class _IngredientsListState extends State<IngredientsList> {
   Map<String, int> _ingredients = {};
   bool _isLoading = false;
-  TextEditingController _tfController;
-  bool _isEditing = false;
 
   void _setLoading(bool value) {
     setState(() {
@@ -23,17 +21,10 @@ class _IngredientsListState extends State<IngredientsList> {
     });
   }
 
-  void _setEditing(bool value) {
-    setState(() {
-      _isEditing = value;
-    });
-  }
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _tfController = TextEditingController();
   }
 
   @override

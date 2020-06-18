@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:whatscookin/model/recipe.dart';
 import 'package:whatscookin/model/recipe_info.dart';
 import 'package:whatscookin/services/api_service.dart';
@@ -14,24 +16,31 @@ class RecipesList extends StatefulWidget {
 }
 
 class _RecipesListState extends State<RecipesList> {
+  bool _isLoading = false;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('Recipes You Can Make'),
-          leading: IconButton(
-            icon: Icon(
-              Icons.chevron_left,
-              color: Theme.of(context).primaryColor,
+    return ModalProgressHUD(
+      inAsyncCall: _isLoading,
+      progressIndicator:
+          SpinKitWanderingCubes(color: Theme.of(context).primaryColor),
+      child: Scaffold(
+          appBar: AppBar(
+            title: Text('Recipes You Can Make'),
+            leading: IconButton(
+              icon: Icon(
+                Icons.chevron_left,
+                color: Theme.of(context).primaryColor,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            backgroundColor: Colors.white,
+            elevation: 0.0,
           ),
-          backgroundColor: Colors.white,
-          elevation: 0.0,
-        ),
-        body: _checkIfEmpty());
+          body: _checkIfEmpty()),
+    );
   }
 
   _checkIfEmpty() {
@@ -110,8 +119,14 @@ class _RecipesListState extends State<RecipesList> {
                   ),
                 ),
                 onTap: () async {
+                  setState(() {
+                    _isLoading = true;
+                  });
                   RecipeInfo recipeInfo = await APIService.instance
                       .fetchRecipe(widget._recipes[index].id);
+                  setState(() {
+                    _isLoading = false;
+                  });
                   Navigator.push(
                     context,
                     MaterialPageRoute(

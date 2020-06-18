@@ -4,6 +4,7 @@ import 'package:whatscookin/view/classify.dart';
 import 'package:whatscookin/view/detect.dart';
 import 'package:whatscookin/view/ingredients_list.dart';
 import 'package:whatscookin/view/select_method.dart';
+import 'package:whatscookin/view/welcome_screen.dart';
 
 void main() {
   //prevent rotation https://stackoverflow.com/questions/49418332/flutter-how-to-prevent-device-orientation-changes-and-force-portrait
@@ -13,9 +14,9 @@ void main() {
     runApp(MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'What\'s Cookin?',
-        initialRoute: '/ingredients-list',
+        home: WelcomeScreen(),
         theme: ThemeData(
-            primaryColor: Colors.orange[500], accentColor: Colors.black45),
+            primaryColor: Color(0xfffdb15d), accentColor: Colors.black45),
         routes: {
           '/classify': (context) => Classify(),
           '/detect': (context) => Detect(),

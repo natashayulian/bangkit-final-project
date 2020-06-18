@@ -13,8 +13,6 @@ class RecipeScreen extends StatefulWidget {
 
 class _RecipeScreenState extends State<RecipeScreen> {
   dynamic _data;
-  RecipeInfo _recipeInfo =
-      RecipeInfo(title: 'wow', sourceUrl: 'www.google.com');
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +42,6 @@ class _RecipeScreenState extends State<RecipeScreen> {
   }
 
   loadRecipe(id) async {
-//    RecipeInfo recipeInfo = await APIService.instance.fetchRecipe(id);
     await APIService.instance.fetchRecipe(id);
-//    setState(() {
-//      _recipeInfo = recipeInfo;
-//    });
   }
 }

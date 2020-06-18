@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:whatscookin/model/recipe.dart';
 import 'package:whatscookin/model/recipe_info.dart';
@@ -31,19 +30,16 @@ class APIService {
     };
 
     Uri uri = Uri.parse(
-        'https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${params}');
+        'https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&number=20&ingredients=${params}');
     Map<String, String> headers = {
       HttpHeaders.contentTypeHeader: 'application/json',
     };
-
-    Fluttertoast.showToast(msg: uri.toString());
 
     try {
       var response = await http.get(uri, headers: headers);
       List<dynamic> body = json.decode(response.body);
       return body.map((recipe) => Recipe.fromMap(recipe)).toList();
     } catch (err) {
-      print('Cannot get recipes');
       throw err.toString();
     }
   }
@@ -60,17 +56,12 @@ class APIService {
       HttpHeaders.contentTypeHeader: 'application/json',
     };
 
-    var response = await http.get(uri, headers: headers);
-    Map<String, dynamic> body = json.decode(response.body);
-    return RecipeInfo.fromMap(body);
-
-//    try {
-//      var response = await http.get(uri, headers: headers);
-//      Map<String, dynamic> data = json.decode(response.body);
-//      Recipe recipe = Recipe.fromMap(data);
-//      return recipe;
-//    } catch (err) {
-//      throw err.toString();
-//    }
+    try {
+      var response = await http.get(uri, headers: headers);
+      Map<String, dynamic> body = json.decode(response.body);
+      return RecipeInfo.fromMap(body);
+    } catch (err) {
+      throw err.toString();
+    }
   }
 }

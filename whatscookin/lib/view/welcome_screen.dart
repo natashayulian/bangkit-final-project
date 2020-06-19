@@ -4,8 +4,8 @@ List items = [
   {
     "header": "What's Cookin'?",
     "description":
-        "This app is made as part of Bangkit Academy's final project (Group BDG3-C)",
-    "image": "assets/images/logobg.png"
+        "This app is made as part of Bangkit Academy's final project (Group BDG2-C)",
+    "image": "assets/images/bangkit.png"
   },
   {
     "header": "Classify",

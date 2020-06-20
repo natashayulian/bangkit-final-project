@@ -5,3 +5,5 @@ An App that classify and detect ingredients.
 We use CNN to Classify, and YOLO-v3 to detect ingredients.
 If you don't want to take an image, you could just type ingredients that you have and we will search recipes for you
 
+CNN Classification of 18 classes:
+YOLo-v3 Detect and Classify of 13 classes:

@@ -20,6 +20,10 @@ CNN Classification of 18 classes:
 12. carrot 
 13. broccoli
 14. egg
+15. banana
+16. grape
+17. shrimp
+18. squid
 
 
 YOLo-v3 Detect and Classify of 13 classes:

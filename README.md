@@ -4,7 +4,7 @@ This is BDG2-C's Group Final Project.
 An App that classify and detect ingredients.
 We use CNN to Classify, and YOLO-v3 to detect ingredients. Then, you can browse through recipes and choose recipes based on your ingredients.
 
-CNN Classification of 18 classes:
+Detection and Classification of 18 classes:
 1. tomato
 2. fish
 3. bread

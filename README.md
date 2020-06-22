@@ -24,7 +24,7 @@ Classification of 18 classes:
 17. shrimp
 18. squid
 
-Classification of 18 classes:
+Detection of 18 classes:
 1. tomato
 2. fish
 3. bread
